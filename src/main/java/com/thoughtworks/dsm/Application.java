@@ -1,4 +1,4 @@
-package com.thoughtworks.dm;
+package com.thoughtworks.dsm;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
