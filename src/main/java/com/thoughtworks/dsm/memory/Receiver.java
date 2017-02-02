@@ -1,21 +1,12 @@
 package com.thoughtworks.dsm.memory;
 
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.serialization.ClassResolvers;
-import io.netty.handler.codec.serialization.ObjectDecoder;
-import io.netty.handler.codec.serialization.ObjectEncoder;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.SelfSignedCertificate;
-import org.springframework.beans.factory.annotation.Value;
+import com.thoughtworks.dsm.memory.stub.*;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
+import io.grpc.stub.StreamObserver;
+
+import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  * Created by abhijeek on 27/01/17.
@@ -24,42 +15,89 @@ public class Receiver extends Thread{
 
     private int PORT;
 
-    public Receiver(int PORT) {
+    private CacheManager cacheManager;
+
+    public Receiver(int PORT, CacheManager cacheManager) {
         this.PORT = PORT;
+        this.cacheManager = cacheManager;
     }
 
-    public static void listen(int port){
-        new Receiver(port).start();
-    }
 
-    public void run() {
-
-
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+    public void run(){
         try {
-            ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        public void initChannel(SocketChannel ch) throws Exception {
-                            ChannelPipeline p = ch.pipeline();
-                            p.addLast(
-                                    new ObjectEncoder(),
-                                    new ObjectDecoder(ClassResolvers.cacheDisabled(null)),
-                                    new ObjectEchoServerHandler());
-                        }
-                    });
-
-            // Bind and start to accept incoming connections.
-            b.bind(PORT).sync().channel().closeFuture().sync();
+            this.startServer();
+            this.blockUntilShutdown();
         } catch (InterruptedException e) {
             e.printStackTrace();
-        } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public static void listen(int port, CacheManager cacheManager){
+        final Receiver receiver = new Receiver(port, cacheManager);
+        receiver.start();
+
+    }
+
+    private static final Logger logger = Logger.getLogger(Receiver.class.getName());
+
+    /* The port on which the server should run */
+    private Server server;
+
+    private void startServer() throws IOException {
+        server = ServerBuilder.forPort(PORT)
+                .addService(new DistributedMemoryImpl())
+                .build()
+                .start();
+        logger.info("Server started, listening on " + PORT);
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                // Use stderr here since the logger may have been reset by its JVM shutdown hook.
+                System.err.println("*** shutting down gRPC server since JVM is shutting down");
+                Receiver.this.stopServer();
+                System.err.println("*** server shut down");
+            }
+        });
+    }
+
+    private void stopServer() {
+        if (server != null) {
+            server.shutdown();
+        }
+    }
+
+    /**
+     * Await termination on the main thread since the grpc library uses daemon threads.
+     */
+    private void blockUntilShutdown() throws InterruptedException {
+        if (server != null) {
+            server.awaitTermination();
+        }
+    }
+
+    private class DistributedMemoryImpl extends DistributedMemoryServiceGrpc.DistributedMemoryServiceImplBase {
+
+
+        @Override
+        public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
+            System.out.println("read request = " + request.getKey());
+            int value = cacheManager.localGet(request.getKey());
+            ReadResponse response = ReadResponse.newBuilder().setValue(value).build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+        }
+
+        @Override
+        public void write(WriteRequest request, StreamObserver<Empty> responseObserver) {
+            System.out.println("write request = " + request.getKey() + " " + request.getValue());
+            cacheManager.localPut(request.getKey(), request.getValue());
+            responseObserver.onNext(Empty.getDefaultInstance());
+            responseObserver.onCompleted();
+
         }
     }
 

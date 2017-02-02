@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.thoughtworks.dsm.memory.stub";
+option java_outer_classname = "DSMProto";
+option objc_class_prefix = "DSM";
+
+package dsm;
+
+service DistributedMemoryService {
+  rpc Read (ReadRequest) returns (ReadResponse) {}
+  rpc Write (WriteRequest) returns (Empty) {}
+}
+
+message ReadRequest {
+  int32 key = 1;
+}
+
+message ReadResponse {
+  int32 value = 1;
+}
+
+message WriteRequest {
+   int32 key = 1;
+   int32 value = 2;
+}
+
+message Empty {
+
+}
