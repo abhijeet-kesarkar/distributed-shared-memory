@@ -42,7 +42,7 @@ public class Sender {
     public void put(int key, int value) {
 
         try{
-            logger.info("Will try to put " + key + " ..." + value);
+            logger.info("Will try to write " + key + " ..." + value);
             WriteRequest request = WriteRequest.newBuilder().setKey(key).setValue(value).build();
             Empty response;
             try {
@@ -80,7 +80,7 @@ public class Sender {
 
     public int get(int key) {
         try{
-            logger.info("Will try to get " + key + " ...");
+            logger.info("Will try to read " + key + " ...");
             ReadRequest request = ReadRequest.newBuilder().setKey(key).build();
             ReadResponse response;
             try {

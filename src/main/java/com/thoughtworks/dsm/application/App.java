@@ -1,6 +1,6 @@
 package com.thoughtworks.dsm.application;
 
-import com.thoughtworks.dsm.memory.CacheManager;
+import com.thoughtworks.dsm.memory.DistributedSharedMemory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,18 +12,18 @@ import org.springframework.web.bind.annotation.*;
 public class App {
 
 
-    private final CacheManager cacheManager;
+    private final DistributedSharedMemory distributedSharedMemory;
 
     @Autowired
-    public App(CacheManager cacheManager) {
-        this.cacheManager = cacheManager;
+    public App(DistributedSharedMemory distributedSharedMemory) {
+        this.distributedSharedMemory = distributedSharedMemory;
     }
 
     @RequestMapping(value = "/value/{key}", method = RequestMethod.GET)
     public Integer getValue(@PathVariable("key") int key ) {
 
         System.out.println("key = [" + key + "]");
-        return cacheManager.get(key);
+        return distributedSharedMemory.read(key);
 
     }
 
@@ -31,7 +31,7 @@ public class App {
     public void setStatus(@PathVariable("key") int key, @RequestBody Integer value) {
 
         System.out.println("key = [" + key + "], value = [" + value + "]");
-        cacheManager.put(key, value);
+        distributedSharedMemory.write(key, value);
     }
 
 }

@@ -15,11 +15,11 @@ public class Receiver extends Thread{
 
     private int PORT;
 
-    private CacheManager cacheManager;
+    private DistributedSharedMemory distributedSharedMemory;
 
-    public Receiver(int PORT, CacheManager cacheManager) {
+    public Receiver(int PORT, DistributedSharedMemory distributedSharedMemory) {
         this.PORT = PORT;
-        this.cacheManager = cacheManager;
+        this.distributedSharedMemory = distributedSharedMemory;
     }
 
 
@@ -35,8 +35,8 @@ public class Receiver extends Thread{
     }
 
 
-    public static void listen(int port, CacheManager cacheManager){
-        final Receiver receiver = new Receiver(port, cacheManager);
+    public static void listen(int port, DistributedSharedMemory distributedSharedMemory){
+        final Receiver receiver = new Receiver(port, distributedSharedMemory);
         receiver.start();
 
     }
@@ -84,7 +84,7 @@ public class Receiver extends Thread{
         @Override
         public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
             System.out.println("read request = " + request.getKey());
-            int value = cacheManager.localGet(request.getKey());
+            int value = distributedSharedMemory.localRead(request.getKey());
             ReadResponse response = ReadResponse.newBuilder().setValue(value).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -94,7 +94,7 @@ public class Receiver extends Thread{
         @Override
         public void write(WriteRequest request, StreamObserver<Empty> responseObserver) {
             System.out.println("write request = " + request.getKey() + " " + request.getValue());
-            cacheManager.localPut(request.getKey(), request.getValue());
+            distributedSharedMemory.localWrite(request.getKey(), request.getValue());
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
 
