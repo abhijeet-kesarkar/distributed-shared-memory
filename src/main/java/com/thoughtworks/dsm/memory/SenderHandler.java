@@ -7,11 +7,11 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 /**
  * Created by abhijeek on 29/01/17.
  */
-public class ObjectEchoClientHandler extends ChannelInboundHandlerAdapter {
+public class SenderHandler extends ChannelInboundHandlerAdapter {
 
     private Object message;
 
-    public ObjectEchoClientHandler(Object message) {
+    public SenderHandler(Object message) {
         this.message = message;
     }
 

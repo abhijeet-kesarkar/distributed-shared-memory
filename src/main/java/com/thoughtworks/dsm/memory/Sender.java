@@ -53,7 +53,7 @@ public class Sender {
                             p.addLast(
                                     new ObjectEncoder(),
                                     new ObjectDecoder(ClassResolvers.cacheDisabled(null)),
-                                    new ObjectEchoClientHandler(message));
+                                    new SenderHandler(message));
                         }
                     });
             System.out.printf("Trying to connect to remote server %s %s" , HOST, port);

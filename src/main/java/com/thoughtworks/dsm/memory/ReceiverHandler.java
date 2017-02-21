@@ -6,7 +6,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 /**
  * Created by abhijeek on 27/01/17.
  */
-public class ObjectEchoServerHandler extends ChannelInboundHandlerAdapter {
+public class ReceiverHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
